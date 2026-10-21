@@ -1,0 +1,804 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>THE LAST HEIR - The Complete Investigation</title><style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#070f18;color:#eed4a7;font-family:Georgia,'Times New Roman',serif}
+#top{height:64px;display:flex;align-items:center;gap:16px;padding:8px 19px;border-bottom:1px solid #907047;background:linear-gradient(180deg,#091522,#152534);box-shadow:0 5px 20px #0008;position:relative;z-index:3}
+#brand{min-width:215px;padding-right:16px;border-right:1px solid #695235;white-space:nowrap}
+#brand strong{display:block;letter-spacing:1.5px;font-size:16px}#brand small{font:8px Arial,sans-serif;letter-spacing:1px;color:#bda174}
+#nav{display:flex;gap:6px;min-width:0;flex:1;overflow:auto;scrollbar-width:thin}
+#nav button{font:11px Georgia,serif;background:#101d2b;color:#cdb48b;border:1px solid #6c5437;padding:7px 9px;white-space:nowrap;cursor:pointer}
+#nav button.active{background:#947243;color:#fff9e8;border-color:#eed2a0}#nav button.done::before{content:'✓ ';color:#9cddad}#nav button:disabled{opacity:.43;cursor:not-allowed}
+#tools{display:flex;gap:6px;align-items:center}#tools button{color:#ead5b0;background:#102230;border:1px solid #8a6b43;padding:10px 12px;white-space:nowrap;cursor:pointer;font:10px Arial,sans-serif;letter-spacing:.7px}
+#tools button:hover{background:#263b4e}#chapter{display:block;position:absolute;top:64px;left:0;width:100%;height:calc(100% - 64px);border:0;background:#081421}
+#loading{position:absolute;top:64px;inset-inline:0;bottom:0;display:grid;place-content:center;color:#c7a575;font:14px Georgia,serif;letter-spacing:2px;text-align:center;background:#0b1520}
+#loading[hidden]{display:none}
+#scorebox,#resetbox{position:fixed;inset:0;background:#030910d9;display:none;align-items:center;justify-content:center;z-index:20;padding:18px}
+#scorebox.open,#resetbox.open{display:flex}
+.sheet{width:min(680px,96vw);max-height:90vh;overflow:auto;background:#132334;border:1px solid #ad8754;padding:25px;box-shadow:0 22px 70px #000b}
+.sheet h2{color:#f1d7a8;font-size:27px;font-weight:normal;margin:0 0 9px}.sheet p{font:13px/1.55 Arial,sans-serif;color:#ddd0b9}
+.sheet button{padding:9px 16px;cursor:pointer;background:#a68556;color:#101823;border:0;margin-top:9px}
+.sheet .quiet{background:#12212f;color:#ddc7a1;border:1px solid #806443;margin-right:8px}
+.scoreline{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #614d36;font:13px Arial,sans-serif}.scoreline b{color:#f3d79f}
+#notice{font:10px Arial,sans-serif;color:#baa178;text-align:center;padding:4px}
+@media(max-width:1060px){#top{height:auto;min-height:64px;flex-wrap:wrap;padding:8px}#brand{min-width:130px}#brand small{display:none}#nav{order:3;flex-basis:100%}#chapter{top:101px;height:calc(100% - 101px)}#loading{top:101px}}
+</style>
+<style id="tlh-minimal-shell-style">
+/* Keep only the five chapter-specific headers; no secondary 64px global header. */
+#top{display:none!important}
+html,body{height:100%;width:100%;overflow:hidden}
+#chapter{top:0!important;left:0!important;right:0!important;height:100vh!important;height:100dvh!important;width:100%!important}
+#loading{top:0!important;left:0!important;right:0!important;bottom:0!important}
+#mini-access{position:fixed;bottom:13px;left:13px;z-index:10;font-family:Arial,sans-serif;color:#e7d0aa}
+#mini-open{background:#0c1d2ce6;color:#e6c998;border:1px solid #8b6e47;border-radius:4px;padding:8px 12px;letter-spacing:1px;font-size:10px;cursor:pointer;box-shadow:0 3px 15px #0008;opacity:.81}
+#mini-open:hover,#mini-open[aria-expanded="true"]{background:#1f3243;opacity:1}
+#mini-panel{display:none;position:absolute;bottom:44px;left:0;width:270px;background:#101f30f8;border:1px solid #a68150;box-shadow:0 14px 34px #000b;padding:12px;max-height:calc(100dvh - 100px);overflow:auto}
+#mini-panel.open{display:block}
+#mini-panel h3{font:14px Georgia,serif;color:#efd3a2;margin:0 0 11px;font-weight:normal}
+#mini-list{display:grid;gap:5px}
+#mini-list button{display:flex;gap:8px;align-items:center;justify-content:space-between;text-align:left;border:1px solid #614a32;background:#15293a;color:#e6d1ae;font:11px Georgia,serif;padding:9px 10px;cursor:pointer}
+#mini-list button.active{background:#6c5132;border-color:#bda16b}
+#mini-list button:disabled{opacity:.42;cursor:not-allowed}
+#mini-score{margin-top:11px;width:100%;border:1px solid #8d7049;color:#f3d9aa;background:#1d3143;padding:9px;font:11px Arial,sans-serif;cursor:pointer}
+#resetbox{z-index:50}
+@media(max-width:680px){#mini-access{bottom:8px;left:8px}#mini-open{font-size:9px;padding:7px 8px}#mini-panel{width:min(260px,90vw)}}
+
+/* Soft chapter transition: keep the old chapter visible while the next chapter loads. */
+#chapter{z-index:1;opacity:1;will-change:opacity}
+.tlh-next-chapter{display:block;position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;border:0;background:#0b1520;opacity:0;z-index:2;pointer-events:none;will-change:opacity}
+#loading{z-index:4}
+@media(prefers-reduced-motion:reduce){#chapter,.tlh-next-chapter{transition:none!important}}
+</style>
+
+<style id="tlh-auto-chapter-style">
+#complete-chapter-transition{position:fixed;inset:0;z-index:16;display:none;align-items:center;justify-content:center;background:rgba(7,15,24,.95);color:#eed9b2;text-align:center;opacity:0;transition:opacity .38s ease;pointer-events:none}
+#complete-chapter-transition.on{display:flex;opacity:1;pointer-events:auto}
+#complete-chapter-transition .transition-card{padding:35px 34px;min-width:min(420px,90vw);border-top:1px solid #ab844f;border-bottom:1px solid #ab844f;background:linear-gradient(110deg,#122536,#1d2934)}
+#complete-chapter-transition .eyebrow{font:10px Arial,sans-serif;letter-spacing:2.5px;color:#caa975}
+#complete-chapter-transition h2{font-size:29px;margin:12px 0 8px;font-weight:normal}
+#complete-chapter-transition p{font:13px/1.55 Arial,sans-serif;color:#dbccae;margin:0 0 14px}
+#complete-count{font-size:29px;color:#efd3a0;font-variant-numeric:tabular-nums}
+#complete-chapter-transition .progress{height:3px;margin:16px auto 0;max-width:320px;background:#4a4b47}
+#complete-progress{display:block;width:0;height:100%;background:#dbb473;transition:width .12s linear}
+#mini-guide{position:absolute;bottom:44px;left:0;width:294px;padding:15px 16px;background:#112536;border:1px solid #b28e5b;box-shadow:0 8px 28px #0008;z-index:11;display:none;line-height:1.5}
+#mini-guide.open{display:block}
+#mini-guide:after{content:'';position:absolute;left:30px;bottom:-8px;width:13px;height:13px;background:#112536;border-right:1px solid #b28e5b;border-bottom:1px solid #b28e5b;transform:rotate(45deg)}
+#mini-guide h3{font-size:16px;font-weight:normal;margin:2px 0 8px;color:#f3dcb7}
+#mini-guide p{font:12px/1.52 Arial,sans-serif;margin:0 0 12px;color:#e2d5bd}
+#mini-guide button{background:#a9844e;border:0;color:#15212c;padding:7px 18px;cursor:pointer;font:700 11px Arial,sans-serif;letter-spacing:.4px}
+@media(max-width:680px){#mini-guide{width:min(290px,90vw)}}
+</style>
+
+<style id="tlh-trailer-style">
+/* Opening cinematic precedes game, completely self-contained/offline. */
+#tlh-intro-overlay{position:fixed;inset:0;z-index:2147483600;background:#02070e;color:#e9d6b4;opacity:1;transition:opacity 1.35s ease;overflow:hidden;isolation:isolate}
+#tlh-intro-overlay.tlh-intro-vanish{opacity:0;pointer-events:none}
+#tlh-intro-video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#03070c}
+#tlh-intro-overlay:before{content:'';pointer-events:none;position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,8,15,.50),transparent 18%,transparent 75%,rgba(0,8,15,.72))}
+#tlh-intro-bar{position:absolute;z-index:3;top:18px;left:23px;right:23px;display:flex;align-items:center;justify-content:space-between;gap:16px;font-family:Georgia,serif;pointer-events:none}
+#tlh-intro-logo{font-size:clamp(15px,1.6vw,24px);letter-spacing:2px;font-weight:bold;text-shadow:0 2px 12px #000b}
+#tlh-intro-logo span{display:block;font:9px Arial,sans-serif;color:#d7b47b;letter-spacing:2.2px;margin-top:4px}
+#tlh-intro-actions{display:flex;gap:9px;pointer-events:auto}
+#tlh-intro-actions button{background:#101f2cd9;color:#f0d7aa;border:1px solid #a1804d;min-height:40px;padding:10px 16px;font:10px Arial,sans-serif;letter-spacing:1.4px;cursor:pointer;white-space:nowrap;box-shadow:0 3px 15px #0008}
+#tlh-intro-actions button:hover,#tlh-intro-actions button:focus-visible{background:#765a34;color:#fff6e9;outline:1px solid #dbbb83;outline-offset:2px}
+#tlh-intro-bottom{position:absolute;bottom:0;left:0;right:0;z-index:3;padding:22px 24px 24px;display:flex;align-items:end;justify-content:space-between;gap:12px;pointer-events:none}
+#tlh-intro-status{color:#dfc69f;font:10px Arial,sans-serif;letter-spacing:2px;text-shadow:0 2px 10px #000}
+#tlh-intro-clock{color:#f0dcb9;font:11px Arial,sans-serif;letter-spacing:1.7px;font-variant-numeric:tabular-nums;text-shadow:0 2px 10px #000}
+#tlh-intro-track{position:absolute;z-index:4;bottom:0;left:0;right:0;height:3px;background:rgba(134,109,67,.45)}
+#tlh-intro-progress{display:block;height:100%;width:0;background:#d3ad70;transition:width .12s linear}
+body.tlh-intro-visible #chapter{opacity:0!important}
+body.tlh-intro-visible #mini-access{opacity:0;pointer-events:none}
+#chapter{transition:opacity 1.65s ease!important}
+#mini-access{transition:opacity 1.35s ease!important}
+@media(max-width:600px){#tlh-intro-bar{left:12px;right:12px;top:11px}#tlh-intro-logo{font-size:13px;letter-spacing:1px}#tlh-intro-logo span{font-size:7px;letter-spacing:1px}#tlh-intro-actions button{padding:10px;font-size:9px;letter-spacing:.5px}#tlh-intro-bottom{padding:12px 12px 20px}}
+@media(prefers-reduced-motion:reduce){#tlh-intro-overlay,#chapter,#mini-access{transition-duration:.25s!important}}
+</style>
+<style id="tlh-ending-style">
+#tlh-ending-overlay{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;z-index:2147483645;background:#000;opacity:0;transition:opacity .85s ease;isolation:isolate}
+#tlh-ending-overlay[hidden]{display:none!important}
+#tlh-ending-overlay.visible{opacity:1}
+#tlh-ending-video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;opacity:0;transition:opacity 3.6s ease}
+#tlh-ending-video.visible{opacity:1}
+#tlh-ending-resume{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:16px 24px;border:1px solid #cba16b;background:#122436;color:#f7dfb8;font:14px Arial,sans-serif;cursor:pointer;z-index:2}
+#tlh-ending-resume[hidden]{display:none}
+#resetbox .sheet{border-color:#bd975e}#resetcancel,#resetconfirm{min-height:42px}
+</style><style id="tlh-audit-ui-fixes">#handover-launch{position:fixed;right:22px;bottom:15px;z-index:14;background:#24313c;border:1px solid #c3a16c;color:#f4dcaf;font:12px Georgia,serif;padding:11px 17px;cursor:pointer;box-shadow:0 5px 18px #0006}
+#complete-chapter-transition .transition-card{max-width:620px;margin:20px}
+#complete-chapter-transition p{line-height:1.75;font-size:15px;margin:15px 0 22px}
+#complete-chapter-transition button,#mini-rules,#mini-replay-intro{background:#243442;color:#efdbb8;border:1px solid #ae8c58;padding:10px 16px;cursor:pointer;font:12px Georgia,serif}
+#handover-continue{background:#b68e52!important;color:#10202b!important;margin-left:12px}
+#mini-rules,#mini-replay-intro{display:block;width:100%;margin-top:7px;font-size:11px}
+#tlh-common-rules{position:fixed;inset:0;z-index:2147483500;background:#060e19ed;display:grid;place-items:center;color:#e9d8bb;padding:20px}
+#tlh-common-rules[hidden],#handover-launch[hidden]{display:none}
+.tlh-rules-card{width:min(800px,100%);max-height:92vh;box-sizing:border-box;overflow:auto;background:linear-gradient(120deg,#122536,#1a2b39);border:1px solid #ab844f;padding:27px 32px;box-shadow:0 20px 70px #0008}
+.tlh-rules-card .eyebrow{font:10px Arial,sans-serif;letter-spacing:2px;color:#c8a871}
+.tlh-rules-card h2{font:normal 30px Georgia,serif;margin:12px 0 20px}
+.tlh-rules-copy{font:14px/1.65 Arial,sans-serif}.tlh-rules-copy b{color:#f3d19d}.tlh-rules-copy p{margin:0 0 13px}
+#tlh-rules-close{background:#b68e52;color:#12212d;border:1px solid #d0ae77;padding:13px 21px;font:700 11px Arial,sans-serif;cursor:pointer}
+</style><style id="tlh-handover-pointer">#handover-guide{position:fixed;right:22px;bottom:65px;z-index:15;box-sizing:border-box;width:310px;padding:15px 17px;color:#efdcba;background:#172835;border:1px solid #b59866;box-shadow:0 8px 24px #0007;font:13px/1.55 Georgia,serif}
+#handover-guide[hidden]{display:none}#handover-guide strong{font:700 10px Arial,sans-serif;letter-spacing:.8px;color:#d9bb82}#handover-guide p{margin:9px 0 12px}#handover-guide button{background:#293b47;border:1px solid #aa8c59;color:#f2dfb9;padding:5px 11px;cursor:pointer}#handover-guide>span{float:right;font-size:22px;color:#ddbd7d}#handover-launch.tlh-handover-highlight{outline:2px solid #d9ba7e;outline-offset:3px}</style></head><body>
+<div id="tlh-intro-overlay" role="region" aria-label="The Last Heir opening trailer">
+  <video id="tlh-intro-video" playsinline webkit-playsinline autoplay preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate" aria-label="The Last Heir cinematic trailer"><source src="opening.mp4" type="video/mp4"></video>
+  <div id="tlh-intro-bar"><div aria-hidden="true"></div><div id="tlh-intro-actions"><button id="tlh-intro-sound" type="button" aria-label="Turn trailer sound on">♫ SOUND OFF</button><button id="tlh-intro-skip" type="button" aria-label="Skip trailer and begin game">SKIP INTRO →</button></div></div>
+  <div id="tlh-intro-bottom"><span id="tlh-intro-status">AN ASTER FOODS STORY</span><span id="tlh-intro-clock">00:00 / 00:30</span></div><div id="tlh-intro-track"><span id="tlh-intro-progress"></span></div>
+</div>
+<script id="tlh-intro-controller">
+(function(){
+'use strict';
+const overlay=document.getElementById('tlh-intro-overlay');
+const video=document.getElementById('tlh-intro-video');
+const sound=document.getElementById('tlh-intro-sound');
+const skip=document.getElementById('tlh-intro-skip');
+const progress=document.getElementById('tlh-intro-progress');
+const clock=document.getElementById('tlh-intro-clock');
+const status=document.getElementById('tlh-intro-status');
+let ending=false, readyToEnter=false, fadeTimer=null, didFinish=false;
+const DURATION=30;
+// The actual chapter is loaded behind this cinematic, so the game is ready when the movie ends.
+document.body.classList.add('tlh-intro-visible');
+function toggleSoundDisplay(){
+  sound.textContent=video.muted?'♫ SOUND OFF':'♫ SOUND ON';
+  sound.setAttribute('aria-label',video.muted?'Turn trailer sound on':'Mute trailer sound');
+  sound.setAttribute('aria-pressed',String(!video.muted));
+}
+function fmt(n){const v=Math.max(0,Math.floor(n||0));return String(Math.floor(v/60)).padStart(2,'0')+':'+String(v%60).padStart(2,'0')}
+function refreshProgress(){
+  const d=Number.isFinite(video.duration)&&video.duration>0?video.duration:DURATION;
+  progress.style.width=Math.min(100,Math.max(0,(video.currentTime||0)/d*100))+'%';
+  clock.textContent=fmt(video.currentTime)+' / '+fmt(d);
+}
+function finalize(){
+  if(didFinish)return;
+  if(document.readyState==='loading'){
+    status.textContent='PREPARING THE INVESTIGATION…';
+    document.addEventListener('DOMContentLoaded',finalize,{once:true});
+    return;
+  }
+  didFinish=true;
+  if(window.TLH_GAME){TLH_GAME.get().introSeen=true;TLH_GAME.save()}
+  video.pause();
+  video.muted=true;
+  overlay.style.display='none';
+  document.body.classList.remove('tlh-intro-visible');
+  // The game has loaded already; restore focus without interfering with its own first-step guides.
+  document.getElementById('mini-open')?.setAttribute('tabindex','0');
+  window.dispatchEvent(new Event('tlh-intro-finished'));
+}
+function endIntro(){
+  if(ending)return;
+  ending=true;
+  skip.disabled=true;skip.style.opacity='.55';
+  status.textContent='THE INVESTIGATION BEGINS';
+  // Audio and picture both ease away, revealing the chapter through its own fade-in.
+  const started=performance.now(),from=video.muted?0:video.volume;
+  function ramp(t){
+    if(!overlay.isConnected || didFinish)return;
+    const r=Math.min(1,(t-started)/1100);
+    if(!video.muted)video.volume=Math.max(0,from*(1-r));
+    if(r<1)requestAnimationFrame(ramp)
+  }
+  requestAnimationFrame(ramp);
+  overlay.classList.add('tlh-intro-vanish');
+  fadeTimer=setTimeout(finalize,1450);
+}
+video.addEventListener('timeupdate',()=>{
+  refreshProgress();
+  const d=Number.isFinite(video.duration)&&video.duration>0?video.duration:DURATION;
+  if(!ending && video.currentTime>=d-1.15)endIntro();
+});
+video.addEventListener('ended',endIntro);
+video.addEventListener('error',()=>{status.textContent='TRAILER UNAVAILABLE · ENTERING THE GAME';setTimeout(endIntro,550)});
+skip.addEventListener('click',endIntro);
+sound.addEventListener('click',()=>{
+  video.muted=!video.muted;
+  video.volume=1;
+  toggleSoundDisplay();
+  if(video.paused&&!ending)video.play().catch(()=>{});
+});
+// Start muted for reliable autoplay on Chrome/Edge/Safari. Sound can be enabled by one click.
+video.muted=true;video.volume=1;toggleSoundDisplay();refreshProgress();
+function startPlayback(){
+  const p=video.play();
+  if(p && typeof p.catch==='function')p.catch(()=>{
+    status.textContent='CLICK THE TRAILER TO PLAY, OR SKIP INTRO';
+    overlay.addEventListener('click',function resume(ev){
+      if(ev.target.closest('button'))return;
+      video.play().then(()=>{status.textContent='AN ASTER FOODS STORY';overlay.removeEventListener('click',resume)}).catch(()=>{});
+    });
+  });
+}
+function startOrResume(){
+ const g=window.TLH_GAME?.get(),resume=g&&(g.introSeen||Object.values(g.complete).some(Boolean)||Object.values(g.attempts).some(a=>Object.keys(a||{}).length)||g.lastChapter>1);
+ if(resume){ending=true;finalize();return}
+ if(video.readyState>=2)startPlayback();else video.addEventListener('loadeddata',()=>{if(!ending)startPlayback()},{once:true});
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startOrResume,{once:true});else startOrResume();
+// Browser restrictions can prevent media from loading. The skip button always remains accessible.
+window.addEventListener('keydown',e=>{if(!ending && overlay.style.display!=='none' && e.key==='Escape')endIntro()});
+window.__tlhIntro={skip:endIntro,get active(){return !didFinish}};
+
+window.__tlhReplayIntro=function(){
+ clearTimeout(fadeTimer);ending=false;didFinish=false;
+ window.dispatchEvent(new Event('tlh-intro-started'));
+ overlay.style.display='';overlay.classList.remove('tlh-intro-vanish');
+ document.body.classList.add('tlh-intro-visible');skip.disabled=false;skip.style.opacity='';
+ status.textContent='AN ASTER FOODS STORY';video.currentTime=0;video.muted=true;video.volume=1;
+ toggleSoundDisplay();refreshProgress();startPlayback();
+};
+})();
+</script>
+
+<header id="top"><div id="brand"><strong>THE LAST HEIR</strong><small>ASTER FOODS · COMPLETE EDITION</small></div><nav id="nav" aria-label="Chapters"></nav><div id="tools"><button type="button" id="scoreopen">CASE SCORE</button><button type="button" id="restartall">RESTART GAME ↺</button></div></header>
+<iframe id="chapter" title="The Last Heir interactive chapter" allow="autoplay"></iframe><div id="loading">OPENING CASE FILE…</div>
+
+<div id="mini-access">
+  <div id="mini-guide" role="note" aria-label="Chapter navigation guide">
+    <div style="font:9px Arial,sans-serif;color:#caa975;letter-spacing:1.5px">FIRST STEP · GAME NAVIGATION</div>
+    <h3>Explore the Chapters</h3>
+    <p>Click <b>CHAPTERS</b> below to revisit completed investigations or check your Case Score. New chapters unlock in order. Read your finding, then open the handover and choose Continue when you are ready.</p>
+    <button id="mini-guide-dismiss" type="button">GOT IT →</button>
+  </div>
+  <button id="mini-open" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="mini-panel" title="Open chapters and Case Score">☷ CHAPTERS</button>
+  <div id="mini-panel" role="region" aria-label="Chapter navigation"><h3>Investigation Chapters</h3><div id="mini-list"></div><button id="mini-score" type="button">◈ View Case Score</button></div>
+</div>
+<aside id="handover-guide" hidden aria-live="polite"><strong>GUIDANCE · CHAPTER COMPLETE</strong><p id="handover-guide-text">Select READ HANDOVER below to read the findings and continue to the next chapter.</p><button type="button" id="handover-guide-dismiss">Got it</button><span aria-hidden="true">↓</span></aside><button id="handover-launch" aria-describedby="handover-guide-text" hidden>CHAPTER COMPLETE · READ HANDOVER ↗</button><div id="complete-chapter-transition" role="status" aria-live="polite" aria-atomic="true">
+  <div class="transition-card"><div class="eyebrow">ASTER FOODS · CASE FILE SEALED</div><h2 id="complete-chapter-title">Investigation Complete</h2><p id="complete-chapter-description">Preparing the next chapter…</p><div><button id="handover-back">BACK TO FINDING</button><button id="handover-continue">CONTINUE ↗</button></div></div>
+</div>
+<div id="scorebox" role="dialog" aria-modal="true"><div class="sheet"><h2>The Investigation Record</h2><div id="scorebody"></div><button id="scoreclose">RETURN TO GAME</button></div></div>
+<div id="resetbox" role="dialog" aria-modal="true"><div class="sheet"><h2>Restart the whole investigation?</h2><p>This will clear the shared scoring record and all completed chapters. Individual chapter progress will also start over. This action cannot be undone.</p><button class="quiet" id="resetcancel">CANCEL</button><button id="resetconfirm">RESET ALL PROGRESS</button></div></div>
+<script type="application/x-tlh-gzip" id="chapter-data-1" data-src="chapter-1.bin"></script>
+<script type="application/x-tlh-gzip" id="chapter-data-2" data-src="chapter-2.bin"></script>
+<script type="application/x-tlh-gzip" id="chapter-data-3" data-src="chapter-3.bin"></script>
+<script type="application/x-tlh-gzip" id="chapter-data-4" data-src="chapter-4.bin"></script>
+<script type="application/x-tlh-gzip" id="chapter-data-5" data-src="chapter-5.bin"></script>
+<script>
+/* Shared case record. Reuses one record across the original demo's nested frames. */
+(function(){
+'use strict';
+const KEY='tlh_demo_original_aligned_20261015';
+const CPS={
+1:['t1.gstart','t1.gbridge','t1.gquality','t1.scope','t1.evals','t1.cstart','t1.cbridge','t1.cfinal','t1.handoff'],
+2:['t2.sample','t2.acc.TRADE_MKT','t2.acc.REG_LEGAL','t2.acc.ADVISORY','t2.acc.OTHER','t2.conclusion'],
+3:['t3.boundary','t3.final'],
+4:['t4.controlSheet','t4.ev0805','t4.ev1907','t4.ev1410','t4.firstShift','t4.system','t4.n51','t4.n73','t4.n101','t4.cluster','t4.mon','t4.p4class','t4.p4bridge','t4.roles','t4.rolesummary','t4.level','t4.final'],
+5:['t5.vknow','t5.vact','t5.lucas','t5.david','t5.sophia','t5.resp.Victor','t5.resp.Lucas','t5.resp.David','t5.resp.Sophia','t5.motive','t5.final']
+};
+const fresh=()=>({version:1,runId:Date.now().toString(36)+'-'+Math.random().toString(36).slice(2),endingPlayed:false,attempts:{},complete:{},revealed:{},hints:{},childReveal:{},establishedEvidenceTab4:[],decisions:{people:'',northstar:'',system:''},result:null});
+let inherited=null;try{if(parent!==window&&parent.TLH_GAME?.version===1)inherited=parent.TLH_GAME}catch(e){}
+if(inherited){window.TLH_GAME=inherited;return}
+let G=fresh();try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s?.version===1)G={...G,...s}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(G))}catch(e){} try{window.dispatchEvent(new Event('tlh-progress-changed'))}catch(e){}}
+
+// Recover the final checkpoint/status dropped by the earlier completion race.
+try{
+ let changed=false;
+ for(const n of [1,4,5]){
+  const saved=JSON.parse(localStorage.getItem('tlh_run_state_v2_'+n)||'null');
+  if(!saved||saved.runId!==G.runId)continue;
+  const s=saved.state||{},done=n===1?s.handoffLocked&&s.handoff==='margin'&&(s.done?.__tlhSet||[]).length===3:n===4?s.finalDone:s.complete;
+  if(!done)continue;
+  if(!G.complete[n]){G.complete[n]=true;changed=true}
+  if(n!==5){const cp=n===1?'t1.handoff':'t4.final',a=G.attempts[n]??={},r=a[cp]??={wrong:0,solved:false,revealed:false,flags:[]};
+   if(!r.solved){r.solved=true;r.revealed=!!G.revealed[n];changed=true}
+  }
+ }
+ if(changed){G.result=null;G.endingPlayed=false;save()}
+}catch(e){}
+
+function receive(m){
+ if(!m||!CPS[m.tab])return;
+ const n=Number(m.tab);
+ if(window.__tlhResetting||G.result)return;
+ // A render may announce completion immediately before its final ledger event.
+ // Accept that pending successful result, then freeze the completed chapter for review.
+ if(G.complete[n]){
+  if(m.type!=='tlh-attempt'||(!m.ok&&!m.revealed)||G.attempts[n]?.[m.cp]?.solved)return;
+ }
+ if(m.type==='tlh-attempt'&&CPS[n].includes(m.cp)){
+  const a=G.attempts[n]??={};const r=a[m.cp]??={wrong:0,solved:false,revealed:false,flags:[]};
+  if(r.forfeited)return;
+  if(m.revealed){if(!r.solved){r.solved=true;r.revealed=true}}
+  else if(m.ok){r.solved=true}
+  else if(!r.solved){r.wrong=Number.isFinite(m.wrong)?Math.max(r.wrong,m.wrong):r.wrong+1}
+  if(Array.isArray(m.flags))r.flags=[...new Set([...(r.flags||[]),...m.flags.map(String)])];
+ }else if(m.type==='tlh-forfeit'&&n===5&&['t5.vknow','t5.vact','t5.lucas','t5.david','t5.sophia'].includes(m.cp)){
+  const a=G.attempts[n]??={},r=a[m.cp]??={wrong:0,solved:false,revealed:false,flags:[]};
+  if(r.solved)return; // A later timeout cannot revoke an accepted statement.
+  r.forfeited=true;r.solved=false;
+ }else if(m.type==='tlh-status'&&m.complete===true){G.complete[n]=true}
+ else if(m.type==='tlh-tab4-evidence'&&Array.isArray(m.items)&&!G.complete[4]){
+  G.establishedEvidenceTab4=m.items.filter(x=>x&&x.id&&x.docId&&x.text&&Array.isArray(x.usedIn)&&x.usedIn.length).map(x=>({...x}));
+ }else if(m.type==='tlh-hint-used'){if(m.hintKey){G.hintKeys??={};if(G.hintKeys[m.hintKey])return;G.hintKeys[m.hintKey]=true}G.hints[n]=(G.hints[n]||0)+1}
+ else if(m.type==='tlh-reveal-used'&&!m.parentReveal&&!G.revealed[n]){G.childReveal[n]=(G.childReveal[n]||0)+1}
+ else if(m.type==='tlh-auto-hint'){try{window.dispatchEvent(new CustomEvent('tlh-auto-hint-local',{detail:m}))}catch(e){}}
+ save();
+ try{if(parent!==window)parent.postMessage({type:'tlh-score-sync',event:m},'*')}catch(e){}
+}
+const r1=x=>Math.round(x*10)/10;
+function metrics(n){const list=CPS[n],a=G.attempts[n]||{},top=!!G.revealed[n],done=!!G.complete[n];let full=0,half=0,self=0,repeats=0,revealed=0,lost=0;
+ list.forEach(cp=>{const r=a[cp]||{},w=r.wrong||0;repeats+=Math.max(0,w-1);if(r.forfeited)lost++;else if(r.revealed)revealed++;else if(r.solved){self++;if(w<=1)full++;else if(w===2)half++;else lost++}});
+ const counts=done&&!top,clean=full+half/2;
+ return {n,total:list.length,full,half,clean,self,repeats,revealed,lost,top,done,inv:counts?7*clean/list.length:0,disc:counts?Math.max(0,6-1.5*repeats)*self/list.length:0};
+}
+function calculate(){
+ if(G.result)return G.result;
+ const vals=Object.values(G.decisions);if(vals.length!==3||vals.some(v=>!['balanced','hesitant','aggressive'].includes(v)))return null;
+ const tabs=[1,2,3,4,5].map(metrics),ag=vals.filter(x=>x==='aggressive').length,he=vals.filter(x=>x==='hesitant').length,bal=vals.filter(x=>x==='balanced').length;
+ const investigation=r1(tabs.reduce((a,t)=>a+t.inv,0)),discipline=r1(tabs.reduce((a,t)=>a+t.disc,0));
+ const a5=G.attempts[5]||{},files=['Victor','Lucas','David','Sophia'].filter(p=>{const r=a5['t5.resp.'+p]||{};return !G.revealed[5]&&r.solved&&!r.revealed&&!r.forfeited}).length;
+ const governance=r1(7*files/4+vals.reduce((a,v)=>a+(v==='balanced'?6:v==='hesitant'?2:0),0));
+ const hintN=Object.values(G.hints).reduce((a,b)=>a+b,0),revealTabs=Object.values(G.revealed).filter(Boolean).length,childRev=Object.values(G.childReveal).reduce((a,b)=>a+b,0);
+ const independence=Math.max(0,10-Math.round(hintN*.7+revealTabs*2+childRev));
+ const total=r1(investigation+discipline+governance+independence);let ending='conditional';
+ if(ag>=2||(ag>=1&&discipline<=20))ending='reckless';else if(he>=2)ending='hesitant';else if(bal===3&&discipline>=24&&independence>=5&&total>=80)ending='successor';
+ let trait=independence>=9?'THE INDEPENDENT INVESTIGATOR':revealTabs>=2?'THE ASSISTED INVESTIGATOR':'THE HEIR WHO LEARNS FROM ERROR';if(discipline>=28)trait='THE KEEPER OF EVIDENCE DISCIPLINE';
+ G.result={ending,total,trait,investigation,discipline,governance,independence,repeats:tabs.reduce((a,t)=>a+t.repeats,0),ag,he,bal,hintN,revealTabs,childRev,files,tabs};save();try{if(parent!==window)parent.postMessage({type:'tlh-score-result',result:G.result},'*')}catch(e){}return G.result;
+}
+window.TLH_GAME={version:1,CPS,get:()=>G,receive,save,metrics,calculate,
+ setDecision(k,v){if(G.result)return;if(['people','northstar','system'].includes(k)&&['balanced','aggressive','hesitant'].includes(v)){G.decisions[k]=v;G.result=null;save();try{if(parent!==window)parent.postMessage({type:'tlh-score-decision',key:k,value:v},'*')}catch(e){}}},
+ topReveal(n){if(G.complete[n])return;G.revealed[n]=true;save()},
+ reset(){G=fresh();save()},
+ go(n){if(n<1||n>5)return;for(let i=1;i<n;i++)if(!G.complete[i])return;try{if(typeof window.tlhNavigate==='function'){window.tlhNavigate(n);return}}catch(e){}window.location.href='tab%20'+n+'.html'}
+};
+window.addEventListener('message',e=>{const m=e.data||{};if(m.type==='tlh-score-sync'&&m.event){receive(m.event)}else if(m.type==='tlh-score-load'&&m.state?.version===1){G={...fresh(),...m.state};save();setTimeout(()=>{try{document.querySelectorAll('iframe').forEach(f=>f.contentWindow?.postMessage({type:'tlh-score-load',state:G},'*'))}catch(_e){}},500)}});
+window.addEventListener('storage',e=>{if(e.key===KEY){try{const x=JSON.parse(e.newValue);if(x?.version===1)G={...fresh(),...x}}catch(err){}}});
+})();
+
+
+</script><script>
+const NAME=['Financial Review','Cost Breakdown','Transaction Trace','Control System','Board Inquiry'];
+let current=1,serial=0;
+function draw(){
+ const G=TLH_GAME.get();
+ document.querySelector('#nav').innerHTML=NAME.map((name,i)=>{
+  const n=i+1,allowed=n===1||Array.from({length:i},(_,j)=>!!G.complete[j+1]).every(Boolean);
+  return `<button data-number="${n}" ${allowed?'':'disabled'} class="${current===n?'active':''} ${G.complete[n]?'done':''}" title="${name}">${String(n).padStart(2,'0')} · ${name}</button>`;
+ }).join('');
+ document.querySelectorAll('#nav button').forEach(b=>b.addEventListener('click',()=>select(+b.dataset.number)));
+ document.querySelector('#scoreopen').textContent=`CASE SCORE · ${[1,2,3,4,5].filter(i=>G.complete[i]).length}/5`;
+}
+const unpackCache=new Map();
+async function unpack(n){
+ if(unpackCache.has(n))return unpackCache.get(n);
+ const work=(async()=>{
+  const source=document.getElementById('chapter-data-'+n).dataset.src;
+  const response=await fetch(new URL(source,document.baseURI));
+  if(!response.ok)throw new Error('Chapter download failed (HTTP '+response.status+'). Please refresh to try again.');
+  const bytes=new Uint8Array(await response.arrayBuffer());
+  const ds=new DecompressionStream('gzip');
+  return await new Response(new Blob([bytes]).stream().pipeThrough(ds)).text();
+ })();
+ unpackCache.set(n,work);
+ try{return await work}catch(err){unpackCache.delete(n);throw err}
+}
+
+/* Crossfade between two fully loaded iframes instead of replacing the visible page. */
+let chapterSwitching=false;
+const TRANSITION_MS=720;
+const savedChapters=new Map();
+async function select(n,force=false){
+ if(window.__tlhEndingActive||window.__tlhResetting)return;
+ if(!force&&n===current+1&&TLH_GAME.get().complete[current]&&!TLH_GAME.get().bridgeSeen?.[current]&&typeof window.__tlhOpenHandover==='function'){window.__tlhOpenHandover(current);return}
+ if(n===current&&document.getElementById('chapter')?.hasAttribute('srcdoc'))return;
+ if(typeof window.__tlhCancelAutoAdvance==='function')window.__tlhCancelAutoAdvance();
+ if(chapterSwitching)return;
+ if(!force && n!==1&&Array.from({length:n-1},(_,i)=>!!TLH_GAME.get().complete[i+1]).some(x=>!x))return;
+ const requested=n,token=++serial;
+ chapterSwitching=true;
+ const old=document.getElementById('chapter');
+ const overlay=document.getElementById('loading');
+ const first=!old.hasAttribute('srcdoc');
+ try{
+  // Decompress while the previous chapter remains visible. No flash of a blank frame.
+  const cached=savedChapters.get(requested);
+  const page=cached?null:await unpack(requested);
+  if(token!==serial){chapterSwitching=false;return}
+  if(first){
+   current=requested;TLH_GAME.get().lastChapter=requested;TLH_GAME.save();draw();
+   overlay.hidden=false;
+   overlay.textContent='OPENING CASE FILE '+String(requested).padStart(2,'0')+'…';
+   old.addEventListener('load',()=>{
+     if(token!==serial)return;
+     overlay.hidden=true;
+     chapterSwitching=false;
+     try{window.__tlhBindChildRestart?.()}catch(e){console.warn('Restart menu setup',e)}
+   },{once:true});
+   old.srcdoc=page;
+   return;
+  }
+  // Create the new fully loaded chapter behind a transparent layer.
+  const next=cached||document.createElement('iframe');
+  next.className='tlh-next-chapter';
+  next.style.opacity='0';
+  next.style.display='';
+  next.title='The Last Heir - '+NAME[requested-1];
+  next.allow='autoplay';
+  next.tabIndex=-1;
+  next.setAttribute('aria-hidden','true');
+  if(!cached)document.body.insertBefore(next,overlay);
+  let started=false;
+  let transitionTimer;
+  let timeoutTimer;
+  function finish(){
+    if(token!==serial)return;
+    clearTimeout(transitionTimer);clearTimeout(timeoutTimer);
+    old.id='tlh-saved-chapter-'+current;
+    old.style.display='none';
+    old.style.opacity='1';
+    old.style.pointerEvents='none';
+    savedChapters.set(current,old);
+    savedChapters.delete(requested);
+    next.id='chapter';
+    next.style.display='';
+    next.classList.remove('tlh-next-chapter');
+    next.removeAttribute('aria-hidden');
+    next.removeAttribute('tabindex');
+    next.style.opacity='1';
+    next.style.pointerEvents='auto';
+    next.style.transition='';
+    next.style.zIndex='1';
+    current=requested;TLH_GAME.get().lastChapter=requested;TLH_GAME.save();
+    chapterSwitching=false;
+    draw();
+    try{if(!TLH_GAME.get().result)next.contentWindow.TLH_BGM?.resume?.()}catch(e){}
+    try{window.__tlhBindChildRestart?.()}catch(e){console.warn('Restart menu setup',e)}
+  }
+  const onReady=()=>{
+    if(started||token!==serial)return;
+    started=true;clearTimeout(timeoutTimer);
+    // Animate the old chapter out, then the new one in, with a small natural overlap.
+    const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduceMotion){finish();return}
+    old.style.pointerEvents='none';
+    try{old.contentWindow.TLH_BGM?.suspend?.()}catch(e){}
+    old.style.transition='opacity 400ms cubic-bezier(.37,0,.65,1)';
+    next.style.transition='opacity 470ms cubic-bezier(.22,.61,.36,1)';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      if(token!==serial)return;
+      old.style.opacity='0';
+      window.setTimeout(()=>{
+        if(token===serial)next.style.opacity='1';
+      },150);
+      transitionTimer=window.setTimeout(finish,TRANSITION_MS);
+    }));
+  };
+  if(cached)requestAnimationFrame(onReady);
+  else next.addEventListener('load',onReady,{once:true});
+  timeoutTimer=window.setTimeout(()=>{
+    if(!started && token===serial){
+      console.warn('Chapter took longer to load; keeping existing chapter visible.');
+      next.remove();chapterSwitching=false;
+    }
+  },45000);
+  if(!cached)next.srcdoc=page;
+ }catch(e){
+  console.error('Chapter transition error',e);
+  chapterSwitching=false;
+  if(first){overlay.hidden=false;overlay.textContent='COULD NOT OPEN CHAPTER '+requested+'. '+e.message}
+ }
+}
+
+window.tlhNavigate=n=>select(n);
+window.addEventListener('tlh-progress-changed',draw);
+window.addEventListener('message',e=>{
+ const m=e.data||{};
+ // The original game and score API are shared with iframe via the same-origin parent;
+ // accepting tlh-score-sync here again would double-count unsuccessful attempts and hints.
+ if(m.type==='tlh-score-result'&&m.result){TLH_GAME.get().result=m.result;TLH_GAME.save();draw()}
+ if(m.type==='tlh-auto-hint' && m.tab===current){
+   try{document.getElementById('chapter')?.contentWindow?.postMessage({type:'tlh-child-hint'},'*')}catch(err){}
+ }
+});
+function openScore(){
+ if(window.__tlhEndingActive||(TLH_GAME.get().result&&!TLH_GAME.get().endingPlayed))return;
+ const G=TLH_GAME.get();const lines=[1,2,3,4,5].map(n=>TLH_GAME.metrics(n));
+ let totals={inv:0,disc:0};for(const m of lines){totals.inv+=m.inv;totals.disc+=m.disc}
+ document.querySelector('#scorebody').innerHTML=`<p>Progress is recorded across all five chapters. Scores for each chapter count once that chapter is complete.</p>`
+ +lines.map((m,i)=>`<div class="scoreline"><span>${i+1}. ${NAME[i]} - ${m.done?'COMPLETE':'IN PROGRESS'} (${m.self}/${m.total} checks)</span><b>${Math.round((m.inv+m.disc)*10)/10} pts</b></div>`).join('')
+ +`<div class="scoreline"><span>Investigative Ability</span><b>${Math.round(totals.inv*10)/10} / 35</b></div><div class="scoreline"><span>Evidence Discipline</span><b>${Math.round(totals.disc*10)/10} / 30</b></div>`
+ +(G.result?`<div class="scoreline"><span>FINAL SCORE · ${G.result.ending.toUpperCase()}</span><b>${G.result.total} / 100</b></div>`:'<p>Governance Judgement and final ending are determined during the Succession Meeting in Chapter V.</p>');
+ document.querySelector('#scorebox').classList.add('open');
+}
+function resetAll(){
+  if(window.__tlhEndingActive)return;
+  window.__tlhResetting=true;
+  window.__tlhCancelAutoAdvance?.();
+  ++serial;chapterSwitching=false;
+  // Destroy every live chapter before clearing storage; none can write its old state back.
+  document.querySelectorAll('iframe').forEach(f=>{try{f.contentWindow.TLH_BGM?.stopForEnding?.()}catch(e){}f.remove()});
+  savedChapters.clear();
+  for(const storage of [localStorage,sessionStorage]){
+    try{Object.keys(storage).filter(k=>/^tlh[_:-]|^the-last-heir:/i.test(k)).forEach(k=>storage.removeItem(k))}catch(e){}
+  }
+  TLH_GAME.reset();current=1;
+  document.querySelector('#resetbox').classList.remove('open');
+  document.querySelector('#scorebox').classList.remove('open');
+  document.querySelector('#mini-panel').classList.remove('open');
+  document.querySelector('#mini-guide').classList.remove('open');
+  const frame=document.createElement('iframe');frame.id='chapter';frame.allow='autoplay';frame.title='The Last Heir - Financial Review';
+  document.body.insertBefore(frame,document.getElementById('loading'));
+  window.__tlhResetting=false;
+  select(1,true);
+  window.__tlhReplayIntro?.();
+  setTimeout(()=>window.__tlhShowNavGuide?.(),1600);
+}
+
+document.querySelector('#scoreopen').addEventListener('click',openScore);
+document.querySelector('#scoreclose').addEventListener('click',()=>document.querySelector('#scorebox').classList.remove('open'));
+document.querySelector('#restartall').addEventListener('click',()=>document.querySelector('#resetbox').classList.add('open'));
+document.querySelector('#resetcancel').addEventListener('click',()=>document.querySelector('#resetbox').classList.remove('open'));
+document.querySelector('#resetconfirm').addEventListener('click',()=>window.__tlhApplyReset?window.__tlhApplyReset():resetAll());
+select(Math.max(1,Math.min(5,TLH_GAME.get().lastChapter||1)),true);
+</script>
+<script id="tlh-navigation-and-restart-all">
+(function(){
+'use strict';
+const guide=document.getElementById('mini-guide');
+const guideDismiss=document.getElementById('mini-guide-dismiss');
+const guideKey='tlh_nav_guide_shown_20261016';
+function showNavGuide(){
+ if(current!==1||window.__tlhIntro?.active||document.body.classList.contains('tlh-intro-visible')||!TLH_GAME.get().rulesSeen||document.getElementById('tlh-common-rules')?.hidden===false)return;
+ try{if(localStorage.getItem(guideKey)==='1')return}catch(e){}
+ guide.classList.add('open');
+}
+window.__tlhShowNavGuide=showNavGuide;
+window.addEventListener('tlh-rules-closed',showNavGuide);
+window.addEventListener('tlh-intro-finished',showNavGuide);
+window.addEventListener('tlh-intro-started',()=>guide.classList.remove('open'));
+function dismissNavGuide(){guide.classList.remove('open');try{localStorage.setItem(guideKey,'1')}catch(e){}}
+guideDismiss.addEventListener('click',dismissNavGuide);
+const miniOpen=document.getElementById('mini-open');
+const miniPanel=document.getElementById('mini-panel');
+const miniList=document.getElementById('mini-list');
+const resetBox=document.getElementById('resetbox');
+const resetTitle=resetBox.querySelector('h2');
+const resetText=resetBox.querySelector('p');
+const resetConfirm=document.getElementById('resetconfirm');
+
+function refreshMini(){
+  const G=TLH_GAME.get();
+  miniList.innerHTML=NAME.map((label,i)=>{
+    const n=i+1;
+    const allowed=n===1||Array.from({length:i},(_,j)=>!!G.complete[j+1]).every(Boolean);
+    const active=n===current;
+    return `<button type="button" data-tab="${n}" class="${active?'active':''}" ${allowed?'':'disabled'}><span>${String(n).padStart(2,'0')} · ${label}</span><span>${G.complete[n]?'Review ✓':active?'•':''}</span></button>`;
+  }).join('');
+}
+function closeMini(){miniPanel.classList.remove('open');miniOpen.setAttribute('aria-expanded','false')}
+miniOpen.addEventListener('click',e=>{e.stopPropagation();dismissNavGuide();refreshMini();const opening=!miniPanel.classList.contains('open');miniPanel.classList.toggle('open',opening);miniOpen.setAttribute('aria-expanded',String(opening))});
+miniPanel.addEventListener('click',e=>e.stopPropagation());
+miniList.addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b||b.disabled)return;closeMini();select(Number(b.dataset.tab))});
+document.getElementById('mini-score').addEventListener('click',()=>{closeMini();openScore()});
+document.addEventListener('click',closeMini);
+window.addEventListener('tlh-progress-changed',refreshMini);
+window.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMini();resetBox.classList.remove('open')}});
+function askRestartMode(){
+  if(window.__tlhEndingActive)return;
+  resetTitle.textContent='Restart all chapters?';
+  resetText.textContent='All answers, scores, evidence and progress across the five chapters will be erased. You will start the whole investigation again from the opening trailer. Do you want to restart all?';
+  resetConfirm.textContent='YES, RESTART ALL';
+  document.getElementById('resetcancel').textContent='NO, KEEP PLAYING';
+  closeMini();resetBox.classList.add('open');document.getElementById('resetcancel').focus();
+}
+window.__tlhAskRestartAll=askRestartMode;
+window.__tlhApplyReset=resetAll;
+document.getElementById('restartall').onclick=askRestartMode;
+function bindChildRestart(){
+  const root=document.getElementById('chapter');
+  const n=current;
+  function bind(w){
+    let d;try{d=w.document;if(!d?.body)return}catch(e){return}
+    w.__tlhAskRestartAll=askRestartMode;
+    if(!d.__tlhRestartMenuBound){
+      d.__tlhRestartMenuBound=true;
+      // All old restart routes now open the same whole-game confirmation.
+      ['restart','resetTab4','resetGame','tlhReload'].forEach(name=>{if(typeof w[name]==='function')w[name]=askRestartMode});
+      d.addEventListener('click',e=>{
+        const b=e.target.closest?.('button,a,[role="button"]');if(!b)return;
+        const action=b.getAttribute('onclick')||'';
+        const label=(b.getAttribute('aria-label')||b.textContent||'').trim();
+        if(b.id==='tlh-restartbtn'||/\b(?:restart|resetTab4|resetGame|tlhReload)\s*\(/i.test(action)||/^(?:[↺⟲]\s*)?(?:restart(?: all| game| scene 1)?|start again|reset)$/i.test(label)){
+          e.preventDefault();e.stopImmediatePropagation();askRestartMode();
+        }
+      },true);
+      w.addEventListener('message',e=>{
+        if(['tlh-child-reset','tlh-child-reset-hard'].includes(e.data?.type)){
+          e.stopImmediatePropagation();askRestartMode();
+        }
+      },true);
+      d.addEventListener('load',e=>{if(e.target?.tagName==='IFRAME')bind(e.target.contentWindow)},true);
+      const ob=new w.MutationObserver(records=>{
+        for(const r of records)for(const node of r.addedNodes){
+          if(node.nodeType!==1)continue;
+          if(node.tagName==='IFRAME')bind(node.contentWindow);
+          node.querySelectorAll?.('iframe').forEach(f=>bind(f.contentWindow));
+        }
+      });
+      ob.observe(d.body,{childList:true,subtree:true});
+      d.querySelectorAll('#tlh-restartbtn,button[onclick="restart()"],button[onclick="resetTab4()"],button[onclick="resetGame()"]').forEach(b=>{
+        b.title='Restart all chapters';b.setAttribute('aria-label','Restart all chapters');
+        if(!b.querySelector('svg'))b.textContent='RESTART ALL';
+      });
+    }
+    d.querySelectorAll('iframe').forEach(f=>bind(f.contentWindow));
+  }
+  if(root)bind(root.contentWindow);
+}
+window.__tlhBindChildRestart=bindChildRestart;
+
+const frame=document.getElementById('chapter');
+frame.addEventListener('load',()=>{bindChildRestart();refreshMini();if(current===1)window.setTimeout(showNavGuide,950)});
+// Handle an already-loaded first chapter in case it finishes before this script runs.
+try{if(frame.contentDocument&&frame.contentDocument.readyState==='complete'){bindChildRestart();if(current===1)window.setTimeout(showNavGuide,950)}}catch(e){}
+
+const TLH_BRIDGES={"1": {"time": "23:20", "title": "One Number Refuses to Settle", "body": "Revenue and the major cash movements can be reconciled at the level now available. Marketing & Administration cannot. Behind the 21.0 million actual figure sits a 3.0 million variance whose composition is still hidden.", "next": "Open Chapter II · Cost Breakdown"}, "2": {"time": "00:15", "title": "The Gap Narrows", "body": "Most of the 3.0 million now has a record behind it. Advisory does not. A 2.6 million residual remains without a transaction-level explanation. Unexplained is not the same as improper.", "next": "Open Chapter III · Transaction Trace"}, "3": {"time": "00:58", "title": "Three Lines Become One Transaction", "body": "NS-051, NS-073 and NS-101 trace to NST-01 and the same economic purpose. Together they form a 2.6 million transaction. The next question is no longer what the amount is, but how that amount should have moved through authority.", "next": "Open Chapter IV · The Control Path"}, "4": {"time": "03:00", "title": "The Route Broke Before the Story Did", "body": "The control path failed, yet the machine does not explain every step that followed. The remaining question belongs to people: who knew the specific condition, and who acted after knowing it?", "next": "Open Chapter V · The Board Inquiry"}, "5": {"time": "07:35", "title": "The File Is Ready for Dawn", "body": "Responsibility has been tested and the conflict of interest has been established. Fraud remains an independent investigative question. The Board now asks whether you can govern with the same discipline you used to investigate.", "next": "Enter the Succession Meeting"}};
+// Completion leaves the finding visible until the player opens the handover.
+function cancelAutoAdvance(){
+ const el=document.getElementById('complete-chapter-transition');el.classList.remove('on');el.style.display='none';
+ document.getElementById('handover-launch')?.setAttribute('hidden','');
+}
+window.__tlhCancelAutoAdvance=cancelAutoAdvance;
+window.__tlhOpenHandover=function(chapter){
+ if(chapter>4||!TLH_GAME.get().complete[chapter]||chapterSwitching)return;
+ dismissHandoverGuide(chapter);dismissNavGuide();const b=TLH_BRIDGES[chapter],el=document.getElementById('complete-chapter-transition');
+ document.getElementById('complete-chapter-title').textContent=b.title;
+ document.getElementById('complete-chapter-description').textContent=b.body;
+ el.querySelector('.eyebrow').textContent=b.time+' · CHAPTER '+['I','II','III','IV'][chapter-1]+' SEALED';
+ document.getElementById('handover-continue').textContent=b.next;
+ document.getElementById('handover-continue').onclick=()=>{
+  (TLH_GAME.get().bridgeSeen??={})[chapter]=true;TLH_GAME.save();cancelAutoAdvance();select(chapter+1);
+ };
+ document.getElementById('handover-back').onclick=()=>{cancelAutoAdvance();refreshHandover()};
+ el.style.display='flex';requestAnimationFrame(()=>el.classList.add('on'));unpack(chapter+1).catch(()=>{});
+};
+function dismissHandoverGuide(chapter=current){
+ const g=TLH_GAME.get();(g.handoverGuideSeen??={})[chapter]=true;
+ document.getElementById('handover-guide').hidden=true;
+ document.getElementById('handover-launch').classList.remove('tlh-handover-highlight');TLH_GAME.save();
+}
+function refreshHandover(){
+ const button=document.getElementById('handover-launch'),guide=document.getElementById('handover-guide'),g=TLH_GAME.get();
+ const reading=document.getElementById('complete-chapter-transition').style.display==='flex';
+ button.hidden=chapterSwitching||current>4||!g.complete[current]||!!g.bridgeSeen?.[current]||!!window.__tlhEndingActive||reading;
+ button.onclick=()=>window.__tlhOpenHandover(current);guide.hidden=button.hidden||!!g.handoverGuideSeen?.[current];
+ button.classList.toggle('tlh-handover-highlight',!guide.hidden);
+ document.getElementById('handover-guide-dismiss').onclick=()=>dismissHandoverGuide();
+}
+
+window.addEventListener('tlh-progress-changed',refreshHandover);
+setInterval(refreshHandover,600);refreshHandover();
+
+refreshMini();
+})();
+</script>
+<div id="tlh-ending-overlay" hidden role="dialog" aria-modal="true" aria-label="Ending cinematic"><video id="tlh-ending-video" playsinline preload="auto" disablepictureinpicture controlslist="nodownload noplaybackrate"></video><button id="tlh-ending-resume" hidden>PLAY ENDING</button></div><script type="application/x-tlh-video" id="tlh-ending-data-successor" data-src="ending-successor.mp4"></script><script type="application/x-tlh-video" id="tlh-ending-data-conditional" data-src="ending-conditional.mp4"></script><script type="application/x-tlh-video" id="tlh-ending-data-reckless" data-src="ending-reckless.mp4"></script><script type="application/x-tlh-video" id="tlh-ending-data-hesitant" data-src="ending-hesitant.mp4"></script><script id="tlh-ending-controller">(function(){
+  'use strict';
+  const overlay=document.getElementById('tlh-ending-overlay');
+  const video=document.getElementById('tlh-ending-video');
+  const resume=document.getElementById('tlh-ending-resume');
+  const titles={successor:'THE SUCCESSOR',conditional:'SUCCESSION UNDER OVERSIGHT',reckless:'THE HASTY HEIR',hesitant:'THE HESITANT HEIR'};
+  let active=false,finishing=false,done=null,loadTimer=null;
+  const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+  function visit(w,fn){try{fn(w);Array.from(w.document.querySelectorAll('iframe')).forEach(f=>visit(f.contentWindow,fn))}catch(e){}}
+  function silenceGame(){
+    visit(window,w=>{
+      w.TLH_BGM?.stopForEnding?.();
+      if(w.TLH_SFX){w.TLH_SFX.enabled=false;w.TLH_SFX.ctx?.suspend?.().catch(()=>{})}
+      w.document.querySelectorAll('audio,video').forEach(m=>{if(m!==video){m.pause();m.volume=0}});
+    });
+  }
+  async function finish(){
+    if(!active||finishing)return;
+    finishing=true;clearTimeout(loadTimer);
+    video.classList.remove('visible');
+    await delay(3600);
+    video.pause();
+    const g=TLH_GAME.get();g.endingPlayed=true;TLH_GAME.save();
+    // The score is rendered only after the movie has ended and faded to black.
+    if(done)done();
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    overlay.classList.remove('visible');
+    await delay(850);
+    overlay.hidden=true;active=false;finishing=false;window.__tlhEndingActive=false;
+    document.getElementById('chapter')?.removeAttribute('inert');
+    document.getElementById('mini-access')?.removeAttribute('inert');
+    video.removeAttribute('src');video.load();
+    done=null;
+  }
+  async function play(){
+    resume.hidden=true;
+    try{await video.play()}
+    catch(e){
+      video.muted=true;
+      try{await video.play()}
+      catch(err){resume.textContent='PLAY ENDING';resume.hidden=false;return}
+    }
+    video.classList.add('visible');overlay.dataset.phase='playing';
+    clearTimeout(loadTimer);
+  }
+  video.addEventListener('ended',()=>{overlay.dataset.phase='fading-out';finish()});
+  video.addEventListener('error',()=>{
+    if(!active||finishing)return;
+    resume.textContent='CONTINUE TO RESULTS';resume.dataset.failed='true';resume.hidden=false;
+  });
+  resume.addEventListener('click',()=>{if(resume.dataset.failed==='true')finish();else play()});
+  window.TLH_ENDING={
+    get active(){return active},
+    async play(result,onComplete){
+      if(active)return;
+      if(!titles[result?.ending])throw new Error('Unknown ending');
+      active=true;finishing=false;done=onComplete;window.__tlhEndingActive=true;
+      try{
+      window.__tlhCancelAutoAdvance?.();
+      document.getElementById('scorebox').classList.remove('open');
+      document.getElementById('mini-panel').classList.remove('open');
+      document.getElementById('mini-guide').classList.remove('open');
+      document.getElementById('chapter').setAttribute('inert','');
+      document.getElementById('mini-access').setAttribute('inert','');
+      silenceGame();
+      const intro=document.getElementById('tlh-intro-overlay');if(intro)intro.style.display='none';
+      document.body.classList.remove('tlh-intro-visible');
+      overlay.hidden=false;overlay.dataset.phase='darkening';overlay.dataset.ending=result.ending;
+      overlay.setAttribute('aria-label','Ending cinematic');
+      resume.hidden=true;delete resume.dataset.failed;
+      video.classList.remove('visible');
+      video.muted=localStorage.getItem('the-last-heir:audio-enabled')==='off';video.volume=1;
+      const source=document.getElementById('tlh-ending-data-'+result.ending).dataset.src;
+      video.src=new URL(source,document.baseURI).href;video.load();
+      requestAnimationFrame(()=>requestAnimationFrame(()=>overlay.classList.add('visible')));
+      // Let the decisions dissolve to black before the first video frame fades in.
+      await delay(900);
+      loadTimer=setTimeout(()=>{if(active&&!finishing&&video.paused){resume.textContent='PLAY ENDING';resume.hidden=false}},15000);
+      await play();
+      }catch(error){
+        clearTimeout(loadTimer);video.pause();video.classList.remove('visible');
+        video.removeAttribute('src');video.load();
+        overlay.classList.remove('visible');overlay.hidden=true;resume.hidden=true;
+        document.getElementById('chapter')?.removeAttribute('inert');
+        document.getElementById('mini-access')?.removeAttribute('inert');
+        active=false;finishing=false;done=null;window.__tlhEndingActive=false;
+        throw error;
+      }
+    }
+  };
+  window.dispatchEvent(new Event('tlh-ending-ready'));
+})();
+</script><script id="tlh-shared-rules">
+(function(){
+ const panel=document.createElement('div');panel.id='tlh-common-rules';panel.hidden=true;panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','tlh-rules-title');
+ panel.innerHTML=`<div class="tlh-rules-card"><div class="eyebrow">ASTER FOODS · INVESTIGATION PROTOCOL</div><h2 id="tlh-rules-title">Rules of the Investigation</h2><div class="tlh-rules-copy">
+ <p><b>Read records, then conclude.</b> Questions are checked when you choose or lock an answer. An incomplete answer is not a scored miss. In Chapter II, each document assignment is checked immediately.</p>
+ <p><b>The first unsupported answer is free.</b> A second <em>different</em> unsupported answer on the same question halves its mastery, deducts 1.5 from that chapter’s Evidence Discipline allowance and pauses the question. Reopen a record or wait 15 seconds to continue. A third miss removes that question’s mastery and opens a hint. Further distinct misses still affect discipline. Repeating an already flagged mistake or removing it does not add a miss.</p>
+ <p><b>Guides and Rules are free.</b> Content hints affect Independence. Opening the Guide &amp; Hint menu in Chapter V is free; its content hint is charged once per question. Hint deductions are 0.7 each before the total is rounded. Revealed answers earn no mastery or discipline for those questions and also reduce Independence.</p>
+ <p><b>The original score remains 100 points.</b> Investigative Ability: 35 (7 per chapter). Evidence Discipline: 30 (6 per chapter before penalties). Governance Judgement: 25 (7 for independently locked responsibility files, 18 for the three Board decisions). Independence: 10. There are 45 scored checkpoints: 9, 6, 2, 17 and 11 across Chapters I-V. The ending depends on your Board decisions and these measures.</p>
+ <p><b>Keep each conclusion within the record.</b> An unexplained amount is not proof of fraud. A control failure does not by itself establish personal responsibility. A conflict of interest does not prove fraud.</p>
+ <p><b>Progress in order.</b> Read your locked finding, then open the handover and continue. Completed chapters may be reviewed; their scores stay locked. Restart All asks for confirmation and clears the entire run.</p>
+ <p><b>Chapter V gives each witness one 90-second classification window.</b> Victor shares those 90 seconds across both statements. Wrong answers and their feedback keep the clock running; a correct answer advances immediately. At expiry, only unfinished statements earn 0 points; accepted statements keep their points and evidence. You may then continue to responsibility. The timer is saved, never restarts on retry, and pauses for dialogue, guides, Rules or reviewing another chapter. After reloading, press Continue to resume the saved time.</p>
+ </div><button type="button" id="tlh-rules-close">UNDERSTOOD · CONTINUE ↗</button></div>`;
+ document.body.appendChild(panel);
+ const rulesContinue=document.getElementById('tlh-rules-close');
+ let rulesRequested=false;
+ function advanceOnboarding(){
+  const guide=document.getElementById('mini-guide');
+  if(window.__tlhIntro?.active||document.body.classList.contains('tlh-intro-visible')){
+   panel.hidden=true;guide.classList.remove('open');return;
+  }
+  if(!TLH_GAME.get().rulesSeen||rulesRequested){
+   guide.classList.remove('open');panel.hidden=false;rulesContinue.focus();
+  }else window.__tlhShowNavGuide?.();
+ }
+ const close=()=>{
+  if(panel.hidden)return;
+  panel.hidden=true;rulesRequested=false;TLH_GAME.get().rulesSeen=true;TLH_GAME.save();
+  window.dispatchEvent(new Event('tlh-rules-closed'));
+ };
+ rulesContinue.onclick=close;
+ window.tlhOpenRules=()=>{rulesRequested=true;advanceOnboarding()};
+ window.addEventListener('tlh-intro-started',()=>{
+  panel.hidden=true;rulesRequested=false;document.getElementById('mini-guide').classList.remove('open');
+ });
+ window.addEventListener('tlh-intro-finished',advanceOnboarding);
+ advanceOnboarding();
+ const button=document.createElement('button');button.id='mini-rules';button.textContent='Rules & Scoring';button.onclick=tlhOpenRules;
+ document.querySelector('#mini-panel').appendChild(button);
+ const introButton=document.createElement('button');introButton.id='mini-replay-intro';introButton.textContent='Replay Opening Trailer';introButton.onclick=()=>{document.getElementById('mini-panel').classList.remove('open');window.__tlhReplayIntro()};document.querySelector('#mini-panel').appendChild(introButton);
+})();
+
+</script></body></html>
